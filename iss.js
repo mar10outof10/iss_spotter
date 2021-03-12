@@ -17,13 +17,12 @@ const fetchMyIP = callback => {
       return;
     }
     if (resp.statusCode !== 200) {
-      const msg = `Status Code ${resp.statusCode} when fetching IP. Response: ${body}`;
-      callback(Error(msg), null);
+      callback(Error(`Status Code ${resp.statusCode} when fetching IP. Response: ${body}`), null);
       return;
     }
     const ipAdd = JSON.parse(body).ip;
     callback(null, ipAdd);
-    
+
   });
 };
 
@@ -34,8 +33,7 @@ const fetchCoordsByIP = (ip, callback) => {
       return;
     }
     if (resp.statusCode !== 200) {
-      const msg = `Status Code ${resp.statusCode} when fetching IP. Response: ${body}`;
-      callback(Error(msg), null);
+      callback(Error(`Status Code ${resp.statusCode} when fetching IP. Response: ${body}`), null);
       return;
     }
     const { latitude, longitude } = JSON.parse(body);
@@ -44,4 +42,46 @@ const fetchCoordsByIP = (ip, callback) => {
   });
 };
 
-module.exports = { fetchMyIP, fetchCoordsByIP };
+const issPass = (coords, callback) => {
+  request(`http://api.open-notify.org/iss-pass.json?lat=${coords.latitude}&lon=${coords.longitude}`, (err, resp, body) => {
+    if (err) {
+      callback(err, null);
+      return;
+    }
+    if (resp.statusCode !== 200) {
+      callback(Error(`Status Code ${resp.statusCode} when fetching IP. Response: ${body}`), null);
+      return;
+    }
+    const issPasses = JSON.parse(body).response;
+    callback(null, issPasses);
+  });
+};
+
+const nextISSTimesForMyLocation = callback => {
+  fetchMyIP((err, ip) => {
+    if (err) {
+      return callback(err, null);
+    }
+
+    fetchCoordsByIP(ip, (err, coords) => {
+      if (err) {
+        return callback(err, null);
+      }
+
+      issPass(coords, (err, passes) => {
+        if (err) {
+          return callback(err, null);
+        }
+
+        callback(null, passes);
+      });
+    });
+  });
+};
+
+// const dateConvert = unixTime => {
+//   const monthArr = ['']
+// }
+
+
+module.exports = { nextISSTimesForMyLocation };
